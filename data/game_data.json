@@ -1,28 +1,71 @@
 {
     "locations": {
         "start": {
-            "description": "You find yourself at the entrance of Shmoopland, a magical realm full of wonder and mystery. The air sparkles with possibility.",
+            "description": "You find yourself at the entrance of Shmoopland, a magical realm full of wonder and mystery. The air sparkles with possibility, and a cheerful sign welcomes visitors.",
             "exits": {
                 "north": "town_square"
             }
         },
         "town_square": {
-            "description": "You're in the bustling town square of Shmoopland. Colorful buildings surround you, and the sound of cheerful music fills the air.",
+            "description": "You're in the bustling town square of Shmoopland. Colorful buildings surround you, and the sound of cheerful music fills the air. A magical fountain sprays rainbow-colored water in the center.",
             "exits": {
                 "south": "start",
                 "east": "market",
-                "west": "park"
+                "west": "park",
+                "north": "wizard_tower"
+            }
+        },
+        "market": {
+            "description": "The Shmoopland Market is a lively place filled with floating stalls and magical merchandise. Glowing crystals provide soft illumination, and the air smells of sweet treats.",
+            "exits": {
+                "west": "town_square"
+            }
+        },
+        "park": {
+            "description": "The Whispering Park is a peaceful garden where flowers sing soft melodies. Butterflies with tiny lanterns flutter about, creating a magical light show.",
+            "exits": {
+                "east": "town_square"
+            }
+        },
+        "wizard_tower": {
+            "description": "The base of a tall, spiraling tower that seems to defy gravity. Magical runes pulse with energy along its walls, and a mysterious door beckons.",
+            "exits": {
+                "south": "town_square",
+                "up": "tower_top"
+            }
+        },
+        "tower_top": {
+            "description": "The top of the wizard's tower offers a breathtaking view of all Shmoopland. A mysterious workbench covered in magical items sits in the center of the room.",
+            "exits": {
+                "down": "wizard_tower"
             }
         }
     },
     "items": {
-        "map": {
+        "welcome_sign": {
             "location": "start",
-            "description": "A colorful map of Shmoopland"
+            "description": "A cheerful sign welcoming visitors to Shmoopland",
+            "examine_text": "The sign reads: 'Welcome to Shmoopland! Where magic and whimsy come together. Please enjoy your stay and remember: everything is possible with a sprinkle of imagination!'"
         },
         "magic_coin": {
             "location": "town_square",
-            "description": "A shimmering coin that seems to float slightly above surfaces"
+            "description": "A shimmering coin that seems to float slightly above surfaces",
+            "examine_text": "This golden coin is warm to the touch and occasionally emits tiny sparkles. It hovers just above your palm when you hold it."
+        },
+        "singing_flower": {
+            "location": "park",
+            "description": "A beautiful flower that hums a gentle melody",
+            "examine_text": "As you look closer, the flower begins to sing a sweet lullaby. Its petals glow softly in rhythm with the song."
+        },
+        "crystal_prism": {
+            "location": "market",
+            "description": "A multi-faceted crystal that splits light into rainbow colors",
+            "examine_text": "When you hold it up to the light, it creates a dazzling display of colors that dance around you. It feels cool and smooth to the touch."
+        },
+        "wizard_hat": {
+            "location": "tower_top",
+            "description": "A pointed hat decorated with stars and moons",
+            "examine_text": "This magnificent hat is adorned with constellations that actually twinkle. It feels warm with magical energy."
         }
     }
 }
