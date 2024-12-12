@@ -3,6 +3,7 @@ import sys
 from os import system
 from click import getchar
 from typing import Optional, Dict, List
+from .ai_utils import GameAI
 
 class ShmooplandGame:
     """Base class for the Shmoopland text adventure game."""
@@ -13,8 +14,11 @@ class ShmooplandGame:
         self.inventory: List[str] = []
         self.game_state = {
             "visited_locations": set(["start"]),
-            "collected_items": set()
+            "collected_items": set(),
+            "time_of_day": "morning",
+            "activity_level": "moderate"
         }
+        self.ai = GameAI()  # Initialize AI component with lazy loading
 
     @classmethod
     def load_game_data(cls, json_file: str) -> Dict:
@@ -29,7 +33,19 @@ class ShmooplandGame:
     def look(self) -> None:
         """Display current location description."""
         location = self.game_data['locations'].get(self.current_location, {})
-        print("\n" + location.get('description', 'You are in an unknown place.'))
+
+        # Generate dynamic description using AI
+        context = {
+            "time_of_day": self.game_state["time_of_day"],
+            "activity_level": self.game_state["activity_level"],
+            "visited_before": self.current_location in self.game_state["visited_locations"]
+        }
+
+        description = self.ai.generate_description(
+            location.get('description', 'You are in an unknown place.'),
+            context
+        )
+        print("\n" + description)
 
         # Show available exits
         exits = location.get('exits', {})
@@ -132,23 +148,30 @@ class ShmooplandGame:
         print(f"\n{items[item_name].get('examine_text', items[item_name]['description'])}")
 
     def parse_command(self, command: str) -> None:
-        """Parse and execute player commands."""
-        words = command.lower().split()
-        if not words:
+        """Parse and execute player commands with AI-enhanced understanding."""
+        if not command:
             return
 
+        # Analyze command using AI
+        analysis = self.ai.analyze_command(command)
+        words = command.lower().split()
         action = words[0]
         args = words[1:] if len(words) > 1 else []
 
-        # Handle movement shortcuts (just typing a direction)
-        if action in ['north', 'south', 'east', 'west', 'up', 'down']:
-            self.move(action)
+        # Use AI analysis for enhanced command understanding
+        if analysis["intent"] == "movement" and args:
+            self.move(args[0])
             return
+        elif analysis["intent"] == "interaction":
+            if action == "examine" and args:
+                self.examine(" ".join(args))
+                return
 
-        # Handle other commands
+        # Handle standard commands (quit, look, inventory, help)
         if action == "quit":
             confirm = input("\nAre you sure you want to quit? (y/n) ")
             if confirm.lower() == 'y':
+                self.ai.cleanup()  # Clean up AI resources
                 print("\nThanks for playing Shmoopland!")
                 sys.exit(0)
         elif action == "look":
@@ -163,7 +186,9 @@ class ShmooplandGame:
             self.take(" ".join(args))
         elif action == "drop":
             self.drop(" ".join(args))
-        elif action == "examine":
-            self.examine(" ".join(args))
         else:
             print("\nI don't understand that command. Type 'help' for a list of commands.")
+
+    def cleanup(self):
+        """Clean up resources when game ends."""
+        self.ai.cleanup()
