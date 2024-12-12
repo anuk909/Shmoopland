@@ -1,0 +1,28 @@
+{
+    "locations": {
+        "start": {
+            "description": "You find yourself at the entrance of Shmoopland, a magical realm full of wonder and mystery. The air sparkles with possibility.",
+            "exits": {
+                "north": "town_square"
+            }
+        },
+        "town_square": {
+            "description": "You're in the bustling town square of Shmoopland. Colorful buildings surround you, and the sound of cheerful music fills the air.",
+            "exits": {
+                "south": "start",
+                "east": "market",
+                "west": "park"
+            }
+        }
+    },
+    "items": {
+        "map": {
+            "location": "start",
+            "description": "A colorful map of Shmoopland"
+        },
+        "magic_coin": {
+            "location": "town_square",
+            "description": "A shimmering coin that seems to float slightly above surfaces"
+        }
+    }
+}
