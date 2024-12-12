@@ -6,7 +6,9 @@ through efficient template processing and caching.
 import random
 from typing import Dict, List, Optional
 from memory_profiler import profile
+from .utils import monitor_memory
 
+@monitor_memory(threshold_mb=50.0)
 class ContentGenerator:
     """Generates dynamic content for game locations and items."""
 
@@ -14,16 +16,16 @@ class ContentGenerator:
         self.templates = templates
         self._cache = {}  # Cache for frequently used combinations
 
-    @profile
-    def generate_description(self, location: str, context: Dict) -> str:
-        """Generate a dynamic description for a location.
+    @monitor_memory(threshold_mb=20.0)
+    def generate_description(self, location: str, context: Dict) -> Optional[str]:
+        """Generate dynamic description for a location.
 
         Args:
             location: Location identifier
-            context: Variables for template substitution
+            context: Context variables for template
 
         Returns:
-            Generated description string
+            Generated description or None if no template exists
         """
         cache_key = f"{location}:{hash(frozenset(context.items()))}"
         if cache_key in self._cache:
@@ -31,7 +33,7 @@ class ContentGenerator:
 
         templates = self.templates.get("description_templates", {}).get(location, [])
         if not templates:
-            return ""
+            return None
 
         template = random.choice(templates)
         description = template.format(**self._get_variables(context))

@@ -3,7 +3,9 @@ import random
 from typing import Dict, List, Optional
 from memory_profiler import profile
 from .ai_utils import GameAI
+from .utils import monitor_memory
 
+@monitor_memory(threshold_mb=50.0)
 class NPC:
     """Represents an NPC with basic AI-powered behavior."""
 
@@ -19,7 +21,7 @@ class NPC:
         self.memory: List[Dict] = []  # Limited conversation history
         self.MAX_MEMORY = 5  # Keep memory usage low
 
-    @profile
+    @monitor_memory(threshold_mb=20.0)
     def respond_to(self, player_input: str, ai: GameAI) -> str:
         """Generate AI-enhanced response to player input.
 

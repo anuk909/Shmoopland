@@ -6,7 +6,9 @@ from typing import Optional, Dict, List
 from .ai_utils import GameAI
 from .content_generator import ContentGenerator
 from .npc import NPC
+from .utils import monitor_memory, cleanup_resources
 
+@cleanup_resources
 class ShmooplandGame:
     """Base class for the Shmoopland text adventure game."""
 

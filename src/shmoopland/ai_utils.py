@@ -8,7 +8,9 @@ from textblob import TextBlob
 import markovify
 from typing import Dict, List, Optional
 from memory_profiler import profile
+from .utils import monitor_memory, cleanup_resources
 
+@monitor_memory(threshold_mb=50.0)
 class GameAI:
     """Handles AI-enhanced features for the game with memory-efficient implementation."""
 
@@ -17,12 +19,13 @@ class GameAI:
         self._dialogue_model = None
         self._response_cache = {}  # Cache common responses
 
+    @monitor_memory(threshold_mb=10.0)
     def load_nlp(self) -> None:
         """Lazy load the spaCy model only when needed."""
         if not self._nlp:
             self._nlp = spacy.load("en_core_web_sm")
 
-    @profile
+    @monitor_memory(threshold_mb=20.0)
     def analyze_command(self, text: str) -> Dict:
         """Analyze user command with minimal memory usage.
 
@@ -49,6 +52,7 @@ class GameAI:
         self._response_cache[text] = result
         return result
 
+    @monitor_memory(threshold_mb=10.0)
     def _get_intent(self, doc) -> str:
         """Extract basic intent from spaCy doc using rule-based approach."""
         # Simple rule-based intent detection
@@ -67,6 +71,7 @@ class GameAI:
             return "interaction"
         return "other"
 
+    @monitor_memory(threshold_mb=10.0)
     def generate_description(self, template: str, context: Dict) -> str:
         """Generate dynamic description using templates and context.
 
