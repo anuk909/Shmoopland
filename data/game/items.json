@@ -1,0 +1,79 @@
+{
+    "items": {
+        "welcome_sign": {
+            "location": "start",
+            "description": "A cheerful sign welcoming visitors to Shmoopland",
+            "examine_text": "The sign reads: 'Welcome to Shmoopland! Where magic and whimsy come together. Please enjoy your stay and remember: everything is possible with a sprinkle of imagination!'",
+            "template_refs": []
+        },
+        "magic_coin": {
+            "location": "town_square",
+            "description": "A mysterious magical coin",
+            "template_refs": {
+                "description": "magic_coin_desc",
+                "examine": "magic_coin_examine"
+            }
+        },
+        "singing_flower": {
+            "location": "park",
+            "description": "A beautiful flower that hums a gentle melody",
+            "examine_text": "As you look closer, the flower begins to sing a sweet lullaby. Its petals glow softly in rhythm with the song.",
+            "template_refs": []
+        },
+        "crystal_prism": {
+            "location": "market",
+            "description": "A beautiful crystal prism",
+            "template_refs": {
+                "description": "crystal_prism_desc",
+                "examine": "crystal_prism_examine"
+            }
+        },
+        "wizard_hat": {
+            "location": "tower_top",
+            "description": "A pointed hat decorated with stars and moons",
+            "examine_text": "This magnificent hat is adorned with constellations that actually twinkle. It feels warm with magical energy.",
+            "template_refs": []
+        },
+        "enchanted_teacup": {
+            "location": "apothecary",
+            "description": "A delicate enchanted teacup",
+            "template_refs": {
+                "description": "enchanted_teacup_desc",
+                "examine": "enchanted_teacup_examine"
+            }
+        }
+    },
+    "recipes": {
+        "magic_charm": {
+            "name": "Magic Charm",
+            "ingredients": ["crystal_prism", "singing_flower"],
+            "result": "enchanted_charm",
+            "description": "Combine a crystal prism with a singing flower to create a magical charm that resonates with harmonious energy.",
+            "required_location": "wizard_tower"
+        },
+        "mystic_tea": {
+            "name": "Mystic Tea",
+            "ingredients": ["enchanted_teacup", "musical_leaf"],
+            "result": "mystic_tea",
+            "description": "Brew a magical tea using an enchanted teacup and a musical leaf from the Whispering Park.",
+            "required_location": "apothecary"
+        },
+        "starlight_pendant": {
+            "name": "Starlight Pendant",
+            "ingredients": ["magic_coin", "crystal_prism"],
+            "result": "starlight_pendant",
+            "description": "Forge a mystical pendant by combining a magic coin with a crystal prism.",
+            "required_location": "market"
+        }
+    },
+    "currency": {
+        "magic_coin": {
+            "value": 10,
+            "description": "A standard magical currency accepted throughout Shmoopland"
+        },
+        "starlight_pendant": {
+            "value": 50,
+            "description": "A valuable magical artifact that can be used as premium currency"
+        }
+    }
+}

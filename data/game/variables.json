@@ -1,0 +1,48 @@
+{
+    "description_variables": {
+        "time_of_day": [
+            "early morning", "bright afternoon", "golden evening", "mysterious twilight", "starlit night"
+        ],
+        "activity_level": [
+            "bustling with excited visitors", "quietly peaceful", "filled with magical energy", "humming with activity"
+        ],
+        "weather_effect": [
+            "Gentle sparkles of magic drift through the air.",
+            "A warm breeze carries the scent of enchanted flowers.",
+            "Tiny rainbow clouds float lazily overhead.",
+            "The air shimmers with magical potential."
+        ],
+        "fountain_color": [
+            "rainbow-tinted", "silver-sparkled", "golden-hued", "crystal-clear"
+        ],
+        "merchant_description": [
+            "A wise-looking merchant arranges floating crystals in their display.",
+            "Merchants call out their magical wares with melodious voices.",
+            "A mysterious vendor juggles bottles of color-changing potions."
+        ],
+        "magical_scent": [
+            "brewing potions", "exotic spices", "magical herbs", "crystallized starlight"
+        ],
+        "ambient_effect": [
+            "Tiny sprites dart between the shelves, organizing ingredients.",
+            "A cauldron in the corner bubbles with rainbow foam.",
+            "Magical wind chimes play a soothing melody."
+        ]
+    },
+    "item_variables": {
+        "coin_type": ["shimmering", "glowing", "floating", "musical"],
+        "coin_effect": [
+            "dances in the air",
+            "whispers ancient secrets",
+            "changes color with your mood",
+            "attracts other magical trinkets"
+        ],
+        "crystal_type": ["multi-faceted", "rainbow-catching", "star-touched", "moon-blessed"],
+        "crystal_effect": [
+            "splits light into dancing colors",
+            "hums with magical energy",
+            "reveals hidden messages",
+            "changes shape subtly"
+        ]
+    }
+}

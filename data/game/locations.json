@@ -1,0 +1,53 @@
+{
+    "locations": {
+        "start": {
+            "description": "You find yourself at the entrance of Shmoopland, a magical realm full of wonder and mystery. The air sparkles with possibility, and a cheerful sign welcomes visitors.",
+            "exits": {
+                "north": "town_square"
+            },
+            "template_refs": []
+        },
+        "town_square": {
+            "template_refs": ["town_square_desc"],
+            "exits": {
+                "south": "start",
+                "east": "market",
+                "west": "park",
+                "north": "wizard_tower"
+            }
+        },
+        "market": {
+            "template_refs": ["market_desc"],
+            "exits": {
+                "west": "town_square",
+                "north": "apothecary"
+            }
+        },
+        "apothecary": {
+            "template_refs": ["apothecary_desc"],
+            "exits": {
+                "south": "market"
+            }
+        },
+        "park": {
+            "description": "The Whispering Park is a peaceful garden where flowers sing soft melodies. Butterflies with tiny lanterns flutter about, creating a magical light show.",
+            "exits": {
+                "east": "town_square"
+            },
+            "template_refs": []
+        },
+        "wizard_tower": {
+            "template_refs": ["wizard_tower_desc"],
+            "exits": {
+                "south": "town_square",
+                "up": "tower_top"
+            }
+        },
+        "tower_top": {
+            "template_refs": ["tower_top_desc"],
+            "exits": {
+                "down": "wizard_tower"
+            }
+        }
+    }
+}

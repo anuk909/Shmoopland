@@ -1,0 +1,44 @@
+{
+    "npcs": {
+        "merchant": {
+            "greetings": [
+                "Welcome, traveler! Looking for something magical?",
+                "Ah, a customer! What catches your eye?",
+                "The finest magical wares in all of Shmoopland!"
+            ],
+            "responses": {
+                "positive": [
+                    "Excellent choice! The magic practically chose you.",
+                    "A wise decision! This item has been waiting for the right owner.",
+                    "Wonderful! May it bring you magical adventures."
+                ],
+                "negative": [
+                    "Perhaps something else would suit your magical needs?",
+                    "No worries! The right enchantment will find you.",
+                    "Take your time! Magic can't be rushed."
+                ]
+            },
+            "location": "market"
+        },
+        "wizard": {
+            "greetings": [
+                "Ah, a seeker of magical knowledge!",
+                "Welcome to my tower of wonders!",
+                "Mind the floating books, they're quite shy."
+            ],
+            "responses": {
+                "positive": [
+                    "Indeed! Your magical intuition serves you well.",
+                    "The arcane arts smile upon your choice.",
+                    "Yes, yes! The magical resonance is perfect!"
+                ],
+                "negative": [
+                    "Hmm, perhaps we should consult a different grimoire.",
+                    "The magical alignment isn't quite right.",
+                    "Let's try a different enchantment, shall we?"
+                ]
+            },
+            "location": "wizard_tower"
+        }
+    }
+}
