@@ -1,19 +1,19 @@
-import json
+"""Shmoopland game core implementation with AI-enhanced features."""
+
 import sys
 import gc
-from typing import Dict, List, Any, Optional, Set
-from pathlib import Path
+import json
+from typing import Dict, List, Optional, Set
+from .utils import monitor_memory
 from .content_generator import ContentGenerator
 from .ai_utils import GameAI
 from .npc import NPC
 from .quest_manager import QuestManager
 from .crafting import CraftingSystem
 from .skills import SkillSystem
-from .utils import monitor_memory, cleanup_resources
 
-@cleanup_resources
+@monitor_memory(threshold_mb=50.0)
 class ShmooplandGame:
-    """Base class for the Shmoopland text adventure game."""
 
     def __init__(self):
         """Initialize game with lazy loading and minimal memory footprint."""
@@ -150,57 +150,48 @@ class ShmooplandGame:
             sys.exit(1)
 
     def look(self) -> None:
-        """Display the current location and its contents."""
-        self._initialize_components()  # Ensure components are initialized
+        """Look around the current location with AI-enhanced descriptions."""
+        locations = self.game_data['locations']
+        if self.current_location not in locations:
+            print("\nYou are in a mysterious void. Something has gone wrong!")
+            return
 
-        # Get location description
-        location = self.game_data['locations'].get(self.current_location, {})
+        location = locations[self.current_location]
+
+        # Generate AI-enhanced description based on context
         context = {
             "time_of_day": self.game_state["time_of_day"],
-            "activity_level": self.game_state["activity_level"]
+            "activity_level": self.game_state["activity_level"],
+            **self.game_data.get("location_variables", {})
         }
 
-        description = self.content_generator.generate_description(
-            self.current_location,
-            context
-        ) or location.get('description', 'You are in an undefined location.')
+        # Get base description
+        description = location.get('description', '')
 
-        print(f"\n{description}\n")
+        # Enhance with AI-generated content
+        enhanced_desc = self.ai.generate_description(description, context)
+        print(f"\n{enhanced_desc}")
+
+        # List items in location
+        items_here = [
+            name for name, data in self.game_data['items'].items()
+            if data['location'] == self.current_location
+        ]
+        if items_here:
+            print("\nYou see:", ", ".join(items_here))
+
+        # List NPCs in location
+        npcs_here = [
+            npc for npc, data in self.game_data.get('npcs', {}).items()
+            if data.get('location') == self.current_location
+        ]
+        if npcs_here:
+            print("\nCharacters here:", ", ".join(npcs_here))
 
         # Show available exits
         exits = location.get('exits', {})
         if exits:
-            print("You can go:", ", ".join(exits.keys()))
-            print()
-
-        # Show NPCs
-        npcs_here = {npc_type: npc for npc_type, npc in self.npcs.items()
-                    if npc.location == self.current_location}
-        if npcs_here:
-            print("You see some characters:")
-            for npc_type, npc in npcs_here.items():
-                print(f"- {npc_type.title()}: {npc.get_greeting()}")
-
-        # Show items with dynamic descriptions
-        items = [item for item, data in self.game_data['items'].items()
-                if data['location'] == self.current_location]
-        if items:
-            print("\nYou also see:")
-            for item in items:
-                item_data = self.game_data['items'][item]
-                # Try template first, then static description, then default
-                item_desc = (
-                    self.content_generator.generate_item_description(item, context) or
-                    item_data.get('description', f"a mysterious {item}")
-                )
-                print(f"- {item}: {item_desc}")
-
-        # Show available recipes
-        available_recipes = self.crafting_system.get_available_recipes(self.inventory, self.current_location)
-        if available_recipes:
-            print("\nYou can craft:")
-            for recipe in available_recipes:
-                print(f"- {recipe.name}: {recipe.description}")
+            print("\nExits:", ", ".join(exits.keys()))
 
     def inventory_command(self) -> None:
         """Show player's inventory."""
@@ -288,7 +279,7 @@ class ShmooplandGame:
         print(f"\nYou drop the {item_name}.")
 
     def examine(self, item_name: str) -> None:
-        """Examine an item closely with dynamic description."""
+        """Examine an item with AI-enhanced description."""
         if not item_name:
             print("\nWhat do you want to examine?")
             return
@@ -306,18 +297,16 @@ class ShmooplandGame:
         context = {
             "time_of_day": self.game_state["time_of_day"],
             "activity_level": self.game_state["activity_level"],
+            "skill_level": self.skills.get_skill_level("lore"),
             **self.game_data.get("item_variables", {})
         }
 
-        description = self.content_generator.generate_item_description(
-            item_name,
-            context
-        ) or items[item_name].get('examine_text', items[item_name]['description'])
-
+        base_desc = items[item_name].get('examine_text', items[item_name]['description'])
+        description = self.ai.generate_description(base_desc, context)
         print(f"\n{description}")
 
     def talk(self, npc_type: str) -> None:
-        """Talk to an NPC."""
+        """Talk to an NPC with AI-enhanced interactions."""
         if not npc_type:
             print("\nWho do you want to talk to?")
             return
@@ -333,16 +322,38 @@ class ShmooplandGame:
             print(f"\nThere's no {npc_type} here to talk to.")
             return
 
-        print(f"\n{npc_type.title()}: {npc.get_greeting()}")
+        # Get AI-enhanced greeting based on NPC mood and context
+        context = {
+            "time_of_day": self.game_state["time_of_day"],
+            "activity_level": self.game_state["activity_level"],
+            "previous_interactions": self.game_state["npc_interactions"].get(npc_type, 0)
+        }
+
+        greeting = self.ai.generate_description(npc.get_greeting(), context)
+        print(f"\n{npc_type.title()}: {greeting}")
+
         while True:
             try:
                 response = input("\nWhat do you say? (or 'bye' to end conversation) ")
                 if response.lower() in ['bye', 'goodbye', 'farewell']:
-                    print(f"\n{npc_type.title()}: Safe travels!")
+                    farewell = self.ai.generate_description(
+                        "{npc} bids you farewell.",
+                        {"npc": npc_type.title()}
+                    )
+                    print(f"\n{farewell}")
                     break
-                print(f"\n{npc_type.title()}: {npc.respond_to(response, self.ai)}")
+
+                # Use AI to analyze player's response and generate appropriate NPC reaction
+                analysis = self.ai.analyze_command(response)
+                npc_response = npc.respond_to(response, self.ai)
+                print(f"\n{npc_type.title()}: {npc_response}")
+
+                # Track interaction for future context
+                self.game_state["npc_interactions"][npc_type] = \
+                    self.game_state["npc_interactions"].get(npc_type, 0) + 1
+
             except KeyboardInterrupt:
-                print("\nConversation ended.")
+                print("\nConversation ended abruptly.")
                 break
 
     def show_skills(self) -> None:
