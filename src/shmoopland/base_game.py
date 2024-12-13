@@ -13,18 +13,49 @@ class ShmooplandGame:
     """Base class for the Shmoopland text adventure game."""
 
     def __init__(self):
-        self.game_data = self.load_game_data("data/game_data.json")
-        self.current_location = "start"
+        """Initialize game with lazy loading and minimal memory footprint."""
+        self.game_data = None  # Lazy load
+        self.current_location = "entrance"  # Changed from "start" to match our locations
         self.inventory: List[str] = []
         self.game_state = {
-            "visited_locations": set(["start"]),
+            "visited_locations": set([self.current_location]),
             "collected_items": set(),
             "time_of_day": "morning",
             "activity_level": "moderate"
         }
-        self.ai = GameAI()  # Initialize AI component with lazy loading
-        self.content_generator = ContentGenerator(self.game_data)  # Initialize content generator
-        self.npcs = self._initialize_npcs()
+        self._load_game_data()  # Load only necessary data
+        self._initialize_components()  # Initialize essential components
+
+    def _initialize_components(self):
+        """Initialize game components with lazy loading."""
+        if self.content_generator is None:
+            from .content_generator import ContentGenerator
+            self.content_generator = ContentGenerator(self.game_data)
+
+        if self.ai is None:
+            from .ai_utils import GameAI
+            self.ai = GameAI()
+
+        if self.npcs is None:
+            self.npcs = self._initialize_npcs()
+
+    def _load_game_data(self):
+        """Load only necessary game data components."""
+        try:
+            with open("data/game_data.json", 'r') as file:
+                data = json.load(file)
+                # Only load essential data initially
+                self.game_data = {
+                    'locations': data['locations'],
+                    'items': {k: v for k, v in data['items'].items()
+                            if v['location'] == self.current_location},
+                    'description_variables': data.get('description_variables', {}),
+                    'description_templates': data.get('description_templates', {}),
+                    'item_templates': data.get('item_templates', {})
+                }
+        except FileNotFoundError:
+            print(f'Game data file "data/game_data.json" not found.')
+            sys.exit(1)
 
     def _initialize_npcs(self) -> Dict[str, NPC]:
         """Initialize NPCs with their templates."""
@@ -44,39 +75,35 @@ class ShmooplandGame:
             sys.exit(1)
 
     def look(self) -> None:
-        """Display current location description."""
-        location = self.game_data['locations'].get(self.current_location, {})
+        """Display the current location and its contents."""
+        self._initialize_components()  # Ensure components are initialized
 
-        # Generate dynamic description using content generator
+        # Get location description
+        location = self.game_data['locations'].get(self.current_location, {})
         context = {
             "time_of_day": self.game_state["time_of_day"],
-            "activity_level": self.game_state["activity_level"],
-            "visited_before": self.current_location in self.game_state["visited_locations"],
-            **self.game_data.get("description_variables", {})
+            "activity_level": self.game_state["activity_level"]
         }
 
         description = self.content_generator.generate_description(
             self.current_location,
             context
-        )
+        ) or location.get('description', 'You are in an undefined location.')
 
-        if not description:  # Fallback to static description if no template
-            description = location.get('description', 'You are in an unknown place.')
-
-        print("\n" + description)
+        print(f"\n{description}\n")
 
         # Show available exits
         exits = location.get('exits', {})
         if exits:
-            print("\nYou can go:", ", ".join(exits.keys()))
+            print("You can go:", ", ".join(exits.keys()))
+            print()
 
-        # Show NPCs in the location
-        location_npcs = [npc for npc, data in self.game_data.get('npcs', {}).items()
-                        if data.get('location') == self.current_location]
-        if location_npcs:
-            print("\nYou see:")
-            for npc_type in location_npcs:
-                npc = self.npcs[npc_type]
+        # Show NPCs
+        npcs_here = {npc_type: npc for npc_type, npc in self.npcs.items()
+                    if npc.location == self.current_location}
+        if npcs_here:
+            print("You see some characters:")
+            for npc_type, npc in npcs_here.items():
                 print(f"- {npc_type.title()}: {npc.get_greeting()}")
 
         # Show items with dynamic descriptions
