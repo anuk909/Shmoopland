@@ -63,15 +63,35 @@ def test_content_generation_memory(game):
     """Test memory usage during content generation."""
     context = {
         "time_of_day": "evening",
+        "weather": "stormy",
         "activity_level": "high",
-        "visited_before": True
+        "visited_before": True,
+        "player_status": {
+            "health": 100,
+            "magic": 75,
+            "reputation": "respected"
+        }
     }
 
-    # Generate multiple descriptions
-    locations = ["market", "wizard_tower", "town_square", "park"]
+    # Generate multiple descriptions with rich content
+    locations = [
+        "market", "wizard_tower", "town_square", "park",
+        "ancient_library", "crystal_caves", "mystic_garden",
+        "enchanted_forge", "alchemist_lab", "stargazer_peak"
+    ]
+
     for location in locations:
         game.current_location = location
-        game.look()  # Triggers content generation
+        description = game.look()  # Triggers content generation
+
+        # Verify rich content
+        assert description is not None
+        assert len(description) >= 100  # Ensure detailed descriptions
+        assert any(word in description.lower() for word in ["magical", "mysterious", "ancient", "glowing"])
+
+        # Test dynamic content generation
+        description2 = game.look()  # Generate again
+        assert description2 != description  # Should be different due to dynamic generation
 
     # Memory should stay under 20MB
     game.cleanup()
