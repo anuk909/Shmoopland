@@ -39,10 +39,15 @@ class GameAI:
             return self._response_cache[cache_key]
 
         doc = self.nlp(command.lower())
+        blob = TextBlob(command)  # For sentiment analysis
+
         analysis = {
             'intent': self._extract_intent(doc),
             'objects': [token.text for token in doc if token.dep_ in ('dobj', 'pobj')],
-            'action': next((token.text for token in doc if token.pos_ == 'VERB'), None)
+            'action': next((token.text for token in doc if token.pos_ == 'VERB'), None),
+            'sentiment': blob.sentiment.polarity,  # Add sentiment analysis
+            'entities': [ent.text for ent in doc.ents],  # Add named entities
+            'topic': self._extract_topic(doc)  # Add topic extraction
         }
 
         self._response_cache[cache_key] = analysis
@@ -90,3 +95,21 @@ class GameAI:
         }
 
         return intent_mapping.get(verbs[0], verbs[0])
+
+    def _extract_topic(self, doc) -> str:
+        """Extract main topic from command."""
+        # Look for specific game-related topics
+        topics = {
+            'magic': ['magic', 'spell', 'enchant', 'potion'],
+            'items': ['item', 'object', 'thing', 'artifact'],
+            'trade': ['buy', 'sell', 'trade', 'price'],
+            'quest': ['quest', 'mission', 'task', 'help'],
+            'combat': ['fight', 'attack', 'defend', 'battle']
+        }
+
+        text = doc.text.lower()
+        for topic, keywords in topics.items():
+            if any(keyword in text for keyword in keywords):
+                return topic
+
+        return 'general'

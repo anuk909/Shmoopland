@@ -17,7 +17,7 @@ class ContentGenerator:
         self._cache = {}  # Cache for frequently used combinations
 
     @monitor_memory(threshold_mb=20.0)
-    def generate_description(self, location: str, context: Dict) -> Optional[str]:
+    def generate_description(self, location: str, context: Dict) -> str:
         """Generate dynamic description for a location.
 
         Args:
@@ -25,7 +25,7 @@ class ContentGenerator:
             context: Context variables for template
 
         Returns:
-            Generated description or None if no template exists
+            Generated description, with fallback to default description
         """
         # Create a cache key using only hashable components
         cache_key = f"{location}:{hash(tuple(sorted((k, str(v)) for k, v in context.items())))}"
@@ -36,8 +36,12 @@ class ContentGenerator:
         templates = self.templates.get("description_templates", {})
         location_templates = templates.get(location, [])
 
+        # Fallback to base description if no templates
         if not location_templates:
-            return None
+            base_desc = self.templates.get("locations", {}).get(location, {}).get("description",
+                "You find yourself in a mysterious place filled with magical potential.")
+            self._cache[cache_key] = base_desc
+            return base_desc
 
         template = random.choice(location_templates)
         variables = self._get_variables(context)
@@ -47,7 +51,10 @@ class ContentGenerator:
             self._cache[cache_key] = description
             return description
         except KeyError:
-            return None
+            # Fallback to template without variables
+            fallback = template.replace("{", "{{").replace("}", "}}")
+            self._cache[cache_key] = fallback
+            return fallback
 
     def generate_item_description(self, item: str, context: Dict) -> str:
         """Generate a dynamic description for an item.

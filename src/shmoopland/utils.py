@@ -70,3 +70,31 @@ def force_cleanup() -> None:
     gc.collect()
     if hasattr(gc, 'garbage'):
         del gc.garbage[:]
+
+def log_memory_usage(func: Optional[Callable] = None, message: str = "") -> Callable:
+    """Decorator to log memory usage before and after function execution.
+
+    Can be used as a decorator with or without arguments:
+    @log_memory_usage
+    def func(): ...
+
+    @log_memory_usage(message="Custom message")
+    def func(): ...
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            initial = get_process_memory()
+            logger.info(f"{message or func.__name__} - Initial memory: {initial:.2f}MB")
+
+            result = func(*args, **kwargs)
+
+            final = get_process_memory()
+            logger.info(f"{message or func.__name__} - Final memory: {final:.2f}MB "
+                      f"(Change: {final - initial:+.2f}MB)")
+            return result
+        return wrapper
+
+    if func is None:
+        return decorator
+    return decorator(func)
