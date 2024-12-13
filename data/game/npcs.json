@@ -1,11 +1,23 @@
 {
     "npcs": {
         "merchant": {
-            "greetings": [
-                "Welcome, traveler! Looking for something magical?",
-                "Ah, a customer! What catches your eye?",
-                "The finest magical wares in all of Shmoopland!"
-            ],
+            "greetings": {
+                "happy": [
+                    "Welcome, welcome! What a delightful day for magical shopping!",
+                    "Ah, my favorite customer! Your timing is perfect!",
+                    "The magical items are practically dancing with joy to see you!"
+                ],
+                "neutral": [
+                    "Welcome to my humble shop of wonders!",
+                    "Looking for something magical today?",
+                    "Browse at your leisure, each item has a story."
+                ],
+                "tired": [
+                    "Welcome... *yawns* Pardon me, been a long day of enchanting.",
+                    "Please, look around... The items are still magical, even if I'm tired.",
+                    "Mind the floating price tags, they're a bit drowsy like me..."
+                ]
+            },
             "responses": {
                 "positive": [
                     "Excellent choice! The magic practically chose you.",
@@ -16,16 +28,59 @@
                     "Perhaps something else would suit your magical needs?",
                     "No worries! The right enchantment will find you.",
                     "Take your time! Magic can't be rushed."
+                ],
+                "neutral": [
+                    "Interesting choice... Let me tell you about its magical properties.",
+                    "Each item here has its own unique enchantment.",
+                    "The magic responds differently to each person."
+                ],
+                "informative": [
+                    "Ah, let me share what I know about that!",
+                    "That's quite an interesting question about magic.",
+                    "Well, in my years of magical trading..."
                 ]
             },
-            "location": "market"
+            "topics": {
+                "items": [
+                    "Each item here is hand-selected for its unique magical properties.",
+                    "I source my items from the most reputable magical craftsmen.",
+                    "Every enchantment is guaranteed to be authentic!"
+                ],
+                "magic": [
+                    "Magic is more than just spells, it's about connection.",
+                    "The best magic comes from understanding its nature.",
+                    "Even after all these years, magic still surprises me."
+                ],
+                "prices": [
+                    "Quality enchantments don't come cheap, but they're worth it!",
+                    "I always ensure fair prices for magical items.",
+                    "Consider it an investment in your magical future."
+                ]
+            },
+            "location": "market",
+            "personality_traits": {
+                "openness": 0.8,
+                "friendliness": 0.9
+            }
         },
         "wizard": {
-            "greetings": [
-                "Ah, a seeker of magical knowledge!",
-                "Welcome to my tower of wonders!",
-                "Mind the floating books, they're quite shy."
-            ],
+            "greetings": {
+                "happy": [
+                    "Ah, perfect timing! The stars are aligned for learning!",
+                    "Welcome! The magical energies are particularly strong today!",
+                    "Enter, enter! The books have been asking about you!"
+                ],
+                "neutral": [
+                    "Welcome to my tower of wonders.",
+                    "Mind the floating books, they're quite shy.",
+                    "Ah, a seeker of magical knowledge!"
+                ],
+                "tired": [
+                    "*adjusts spectacles wearily* Oh, a visitor...",
+                    "Pardon the mess... Research keeps me up late.",
+                    "Welcome... *stifles yawn* The magic never rests..."
+                ]
+            },
             "responses": {
                 "positive": [
                     "Indeed! Your magical intuition serves you well.",
@@ -36,9 +91,40 @@
                     "Hmm, perhaps we should consult a different grimoire.",
                     "The magical alignment isn't quite right.",
                     "Let's try a different enchantment, shall we?"
+                ],
+                "neutral": [
+                    "The arcane arts are full of surprises.",
+                    "Every spell has its purpose.",
+                    "Magic works in mysterious ways."
+                ],
+                "informative": [
+                    "According to the ancient texts...",
+                    "Let me consult my research notes...",
+                    "The theory behind this is fascinating..."
                 ]
             },
-            "location": "wizard_tower"
+            "topics": {
+                "spells": [
+                    "Spellcraft requires precision and patience.",
+                    "Each spell has its own unique signature.",
+                    "The key is understanding the magical fundamentals."
+                ],
+                "research": [
+                    "My current research focuses on magical resonance.",
+                    "The ancient texts reveal new secrets daily.",
+                    "Magic is an endless field of study."
+                ],
+                "artifacts": [
+                    "Each magical artifact tells a story.",
+                    "The power within these items is remarkable.",
+                    "Handle with care, they're quite sensitive."
+                ]
+            },
+            "location": "wizard_tower",
+            "personality_traits": {
+                "openness": 0.7,
+                "friendliness": 0.6
+            }
         }
     }
 }
