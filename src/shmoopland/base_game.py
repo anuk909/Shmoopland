@@ -8,6 +8,7 @@ from .ai_utils import GameAI
 from .npc import NPC
 from .quest_manager import QuestManager
 from .crafting import CraftingSystem
+from .skills import SkillSystem
 from .utils import monitor_memory, cleanup_resources
 
 @cleanup_resources
@@ -22,6 +23,7 @@ class ShmooplandGame:
         self.npcs = None
         self.quest_manager = None
         self.crafting_system = None
+        self.skills = None
         self.game_data = {}
         self._loaded_data_types: Set[str] = set()
 
@@ -34,7 +36,8 @@ class ShmooplandGame:
             "time_of_day": "morning",
             "activity_level": "moderate",
             "experience": 0,
-            "currency": 0
+            "currency": 0,
+            "skill_points": 0
         }
 
         # Load initial data with memory optimization
@@ -61,6 +64,9 @@ class ShmooplandGame:
 
         if self.crafting_system is None:
             self.crafting_system = CraftingSystem()
+
+        if self.skills is None:
+            self.skills = SkillSystem()
 
         gc.collect()  # Clean up any temporary objects
 
@@ -217,6 +223,9 @@ class ShmooplandGame:
         print("- talk <character>: Talk to an NPC")
         print("- quests: View your active quests")
         print("- quest <quest_id>: View details of a specific quest")
+        print("- skills: View your skills and levels")
+        print("- skill <skill_name>: View details of a specific skill")
+        print("- train <skill_name>: Practice a skill to gain experience")
         print("- quit: Exit the game")
 
     def move(self, direction: str) -> None:
@@ -336,6 +345,37 @@ class ShmooplandGame:
                 print("\nConversation ended.")
                 break
 
+    def show_skills(self) -> None:
+        """Display all skills and their levels."""
+        skills = self.skills.get_all_skills()
+        print("\nYour Skills:")
+        for name, info in skills.items():
+            print(f"\n- {name.title()} (Level {info['level']})")
+            print(f"  {info['description']}")
+            print(f"  Experience: {info['experience']}/{info['next_level']}")
+
+    def show_skill_details(self, skill_name: str) -> None:
+        """Display detailed information about a specific skill."""
+        desc = self.skills.get_skill_description(skill_name)
+        if not desc:
+            print(f"\nNo skill found with name: {skill_name}")
+            return
+
+        level = self.skills.get_skill_level(skill_name)
+        print(f"\n{skill_name.title()} - Level {level}")
+        print(f"Description: {desc}")
+
+    def train_skill(self, skill_name: str) -> None:
+        """Train a skill to gain experience."""
+        success, message = self.skills.add_experience(skill_name, 10)
+        print(f"\n{message}")
+
+    def perform_skill_check(self, skill_name: str, difficulty: int) -> bool:
+        """Perform a skill check and return success."""
+        success, message = self.skills.check_skill(skill_name, difficulty)
+        print(f"\n{message}")
+        return success
+
     def parse_command(self, command: str) -> None:
         """Parse and execute player commands with AI-enhanced understanding."""
         if not command:
@@ -380,6 +420,12 @@ class ShmooplandGame:
             self.show_quests()
         elif action == "quest" and args:
             self.show_quest_details(" ".join(args))
+        elif action == "skills":
+            self.show_skills()
+        elif action == "skill" and args:
+            self.show_skill_details(" ".join(args))
+        elif action == "train" and args:
+            self.train_skill(" ".join(args))
         else:
             print("\nI don't understand that command. Type 'help' for a list of commands.")
 
@@ -396,4 +442,7 @@ class ShmooplandGame:
         self.content_generator = None
         self.ai = None
         self.npcs = None
+        self.quest_manager = None
+        self.crafting_system = None
+        self.skills = None
         gc.collect()  # Force garbage collection
