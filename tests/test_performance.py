@@ -74,10 +74,33 @@ def test_content_generation_memory(game):
             "enchanted_forge": {"description": "The sound of mystical crafting fills the air."},
             "alchemist_lab": {"description": "Bubbling potions and magical ingredients abound."},
             "stargazer_peak": {"description": "A perfect spot to observe the magical sky."}
+        },
+        "items": {
+            "magic_crystal": {
+                "name": "Magic Crystal",
+                "description": "A shimmering crystal pulsing with magical energy.",
+                "location": "crystal_caves"
+            },
+            "ancient_tome": {
+                "name": "Ancient Tome",
+                "description": "A dusty book filled with mysterious knowledge.",
+                "location": "ancient_library"
+            },
+            "mystic_flower": {
+                "name": "Mystic Flower",
+                "description": "A beautiful flower that seems to glow with inner light.",
+                "location": "mystic_garden"
+            }
+        },
+        "location_variables": {
+            "lighting": "dim",
+            "atmosphere": "magical",
+            "danger_level": "low"
         }
     }
 
-    context = {
+    # Initialize game state
+    game.game_state = {
         "time_of_day": "evening",
         "weather": "stormy",
         "activity_level": "high",
@@ -96,8 +119,8 @@ def test_content_generation_memory(game):
         game.current_location = location
         game.look()  # Triggers content generation
 
-        # Memory should stay under 20MB
-        # This is monitored by the @profile decorator
+    # Memory should stay under 20MB
+    # This is monitored by the @profile decorator
 
     # Cleanup
     game.cleanup()
