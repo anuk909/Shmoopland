@@ -1,48 +1,72 @@
-"""Utility functions and decorators for Shmoopland game."""
+"""Utility functions for memory monitoring and resource management."""
+
+import gc
+import os
+import psutil
 import functools
 import logging
-from typing import Callable, Any
+from typing import Any, Callable, Optional
 from memory_profiler import profile
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def monitor_memory(threshold_mb: float = 50.0) -> Callable:
+def get_process_memory() -> float:
+    """Get current memory usage in MB."""
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024 / 1024
+
+def monitor_memory(threshold_mb: float = 50.0):
     """Decorator to monitor memory usage of functions.
 
     Args:
         threshold_mb: Maximum allowed memory usage in MB
-
-    Returns:
-        Decorated function that monitors memory usage
     """
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        @profile
         def wrapper(*args, **kwargs) -> Any:
-            """Wrapper function that monitors memory usage."""
+            initial_memory = get_process_memory()
+
             try:
                 result = func(*args, **kwargs)
+
+                final_memory = get_process_memory()
+                memory_used = final_memory - initial_memory
+
+                if memory_used > threshold_mb:
+                    logger.warning(f"{func.__name__} used {memory_used:.2f}MB of memory "
+                                 f"(threshold: {threshold_mb}MB)")
+                    gc.collect()  # Force garbage collection
+
                 return result
+
             except Exception as e:
                 logger.error(f"Error in {func.__name__}: {str(e)}")
+                gc.collect()
                 raise
+
         return wrapper
     return decorator
 
-def cleanup_resources(func: Callable) -> Callable:
-    """Decorator to ensure proper cleanup of resources.
+def cleanup_resources(cls: type) -> type:
+    """Class decorator to ensure proper resource cleanup."""
+    original_del = cls.__del__ if hasattr(cls, '__del__') else None
 
-    Returns:
-        Decorated function that handles cleanup
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs) -> Any:
-        """Wrapper function that ensures cleanup."""
+    def __del__(self):
+        """Enhanced destructor with resource cleanup."""
         try:
-            return func(*args, **kwargs)
+            if hasattr(self, 'cleanup'):
+                self.cleanup()
+            if original_del:
+                original_del(self)
         finally:
-            # Get instance (self) from args if it exists
-            if args and hasattr(args[0], 'cleanup'):
-                args[0].cleanup()
-    return wrapper
+            gc.collect()
+
+    cls.__del__ = __del__
+    return cls
+
+def force_cleanup() -> None:
+    """Force cleanup of memory and resources."""
+    gc.collect()
+    if hasattr(gc, 'garbage'):
+        del gc.garbage[:]

@@ -1,94 +1,92 @@
-"""AI utilities for Shmoopland game with focus on low memory usage.
+"""AI utilities for Shmoopland game with memory-efficient implementation."""
 
-This module provides AI-enhanced features while maintaining minimal RAM footprint
-through lazy loading and efficient model usage.
-"""
+import gc
+from typing import Dict, Optional, Any
 import spacy
 from textblob import TextBlob
-import markovify
-from typing import Dict, List, Optional
-from memory_profiler import profile
 from .utils import monitor_memory, cleanup_resources
 
-@monitor_memory(threshold_mb=50.0)
+@cleanup_resources
 class GameAI:
-    """Handles AI-enhanced features for the game with memory-efficient implementation."""
+    """Memory-efficient AI system for game interactions."""
 
     def __init__(self):
-        self._nlp = None  # Lazy loading
-        self._dialogue_model = None
-        self._response_cache = {}  # Cache common responses
+        """Initialize with lazy loading of models."""
+        self._nlp = None
+        self._response_cache: Dict[str, str] = {}
+        self._context: Dict[str, Any] = {}
 
-    @monitor_memory(threshold_mb=10.0)
-    def load_nlp(self) -> None:
-        """Lazy load the spaCy model only when needed."""
-        if not self._nlp:
-            self._nlp = spacy.load("en_core_web_sm")
-
+    @property
     @monitor_memory(threshold_mb=20.0)
-    def analyze_command(self, text: str) -> Dict:
-        """Analyze user command with minimal memory usage.
+    def nlp(self):
+        """Lazy load spaCy model."""
+        if self._nlp is None:
+            self._nlp = spacy.load('en_core_web_sm')
+        return self._nlp
 
-        Args:
-            text: The user's command text
+    def cleanup(self):
+        """Clean up resources."""
+        self._nlp = None
+        self._response_cache.clear()
+        self._context.clear()
+        gc.collect()
 
-        Returns:
-            Dict containing intent, entities, and sentiment analysis
-        """
-        # Check cache first
-        if text in self._response_cache:
-            return self._response_cache[text]
+    @monitor_memory(threshold_mb=5.0)
+    def analyze_command(self, command: str) -> Dict[str, Any]:
+        """Analyze user command with memory-efficient NLP."""
+        cache_key = f"cmd_{command}"
+        if cache_key in self._response_cache:
+            return self._response_cache[cache_key]
 
-        self.load_nlp()
-        doc = self._nlp(text)
-
-        result = {
-            "intent": self._get_intent(doc),
-            "entities": [(ent.text, ent.label_) for ent in doc.ents],
-            "sentiment": TextBlob(text).sentiment.polarity
+        doc = self.nlp(command.lower())
+        analysis = {
+            'intent': self._extract_intent(doc),
+            'objects': [token.text for token in doc if token.dep_ in ('dobj', 'pobj')],
+            'action': next((token.text for token in doc if token.pos_ == 'VERB'), None)
         }
 
-        # Cache the result for future use
-        self._response_cache[text] = result
-        return result
+        self._response_cache[cache_key] = analysis
+        return analysis
 
     @monitor_memory(threshold_mb=10.0)
-    def _get_intent(self, doc) -> str:
-        """Extract basic intent from spaCy doc using rule-based approach."""
-        # Simple rule-based intent detection
-        verbs = [token.lemma_ for token in doc if token.pos_ == "VERB"]
+    def generate_description(self, base_text: str, context: Dict[str, Any]) -> str:
+        """Generate enhanced description with context awareness."""
+        cache_key = f"desc_{base_text}_{hash(frozenset(context.items()))}"
+        if cache_key in self._response_cache:
+            return self._response_cache[cache_key]
+
+        # Use TextBlob for simple sentiment analysis
+        blob = TextBlob(base_text)
+        sentiment = blob.sentiment.polarity
+
+        # Adjust description based on context and sentiment
+        enhanced = base_text
+        if context.get('time_of_day') == 'night':
+            enhanced = enhanced.replace('bright', 'dim').replace('sunny', 'moonlit')
+        if sentiment > 0:
+            enhanced = enhanced.replace('mysterious', 'intriguing').replace('strange', 'fascinating')
+        elif sentiment < 0:
+            enhanced = enhanced.replace('peaceful', 'eerie').replace('quiet', 'unsettling')
+
+        self._response_cache[cache_key] = enhanced
+        if len(self._response_cache) > 100:  # Prevent cache from growing too large
+            self._response_cache.clear()
+
+        return enhanced
+
+    def _extract_intent(self, doc) -> str:
+        """Extract user intent from spaCy doc."""
+        verbs = [token.lemma_ for token in doc if token.pos_ == 'VERB']
         if not verbs:
-            return "unknown"
+            return 'unknown'
 
-        # Common game command intents
-        movement_verbs = {"go", "move", "walk", "run", "climb"}
-        interaction_verbs = {"take", "drop", "examine", "look", "inspect"}
+        intent_mapping = {
+            'look': 'examine',
+            'go': 'move',
+            'take': 'acquire',
+            'drop': 'discard',
+            'talk': 'interact',
+            'help': 'assist'
+        }
 
-        main_verb = verbs[0]
-        if main_verb in movement_verbs:
-            return "movement"
-        elif main_verb in interaction_verbs:
-            return "interaction"
-        return "other"
-
-    @monitor_memory(threshold_mb=10.0)
-    def generate_description(self, template: str, context: Dict) -> str:
-        """Generate dynamic description using templates and context.
-
-        Args:
-            template: Base template string with placeholders
-            context: Dictionary of context variables
-
-        Returns:
-            Generated description string
-        """
-        try:
-            return template.format(**context)
-        except KeyError:
-            return template  # Fallback to original template if context missing
-
-    def cleanup(self) -> None:
-        """Free memory by clearing caches and releasing models."""
-        self._response_cache.clear()
-        self._nlp = None
-        self._dialogue_model = None
+        return intent_mapping.get(verbs[0], verbs[0])
