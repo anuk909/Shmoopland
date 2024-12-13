@@ -1,10 +1,9 @@
 import json
 import sys
-from os import system
-from click import getchar
-from typing import Optional, Dict, List
-from .ai_utils import GameAI
+import gc
+from typing import Dict, List, Any, Optional
 from .content_generator import ContentGenerator
+from .ai_utils import GameAI
 from .npc import NPC
 from .utils import monitor_memory, cleanup_resources
 
@@ -14,8 +13,14 @@ class ShmooplandGame:
 
     def __init__(self):
         """Initialize game with lazy loading and minimal memory footprint."""
-        self.game_data = None  # Lazy load
-        self.current_location = "entrance"  # Changed from "start" to match our locations
+        # Initialize attributes that will be lazy loaded
+        self.content_generator = None
+        self.ai = None
+        self.npcs = None
+        self.game_data = None
+
+        # Set initial game state with minimal data
+        self.current_location = "start"  # Changed back to match tests
         self.inventory: List[str] = []
         self.game_state = {
             "visited_locations": set([self.current_location]),
@@ -23,6 +28,8 @@ class ShmooplandGame:
             "time_of_day": "morning",
             "activity_level": "moderate"
         }
+
+        # Load initial data with memory optimization
         self._load_game_data()  # Load only necessary data
         self._initialize_components()  # Initialize essential components
 
@@ -42,17 +49,31 @@ class ShmooplandGame:
     def _load_game_data(self):
         """Load only necessary game data components."""
         try:
+            # Clear any existing data to free memory
+            if self.game_data:
+                self.game_data.clear()
+                gc.collect()
+
             with open("data/game_data.json", 'r') as file:
                 data = json.load(file)
                 # Only load essential data initially
                 self.game_data = {
-                    'locations': data['locations'],
-                    'items': {k: v for k, v in data['items'].items()
-                            if v['location'] == self.current_location},
-                    'description_variables': data.get('description_variables', {}),
-                    'description_templates': data.get('description_templates', {}),
-                    'item_templates': data.get('item_templates', {})
+                    'locations': {
+                        self.current_location: data['locations'][self.current_location]
+                    },
+                    'items': {
+                        k: v for k, v in data['items'].items()
+                        if v['location'] == self.current_location
+                    },
+                    'description_variables': {
+                        k: v for k, v in data.get('description_variables', {}).items()
+                        if k in ['time_periods', 'activity_levels']  # Only load essential variables
+                    }
                 }
+
+                # Store file path for lazy loading other locations
+                self._data_file = "data/game_data.json"
+                gc.collect()  # Force garbage collection after loading
         except FileNotFoundError:
             print(f'Game data file "data/game_data.json" not found.')
             sys.exit(1)
@@ -142,17 +163,30 @@ class ShmooplandGame:
         print("- quit: Exit the game")
 
     def move(self, direction: str) -> None:
-        """Move player in the specified direction."""
+        """Move to a new location."""
         location = self.game_data['locations'].get(self.current_location, {})
         exits = location.get('exits', {})
 
-        if direction not in exits:
-            print(f"\nYou can't go {direction} from here.")
-            return
+        if direction in exits:
+            new_location = exits[direction]
+            self.current_location = new_location
 
-        self.current_location = exits[direction]
-        self.game_state['visited_locations'].add(self.current_location)
-        self.look()
+            # Load new location data
+            with open(self._data_file, 'r') as file:
+                data = json.load(file)
+                # Update only necessary data for new location
+                self.game_data['locations'] = {
+                    self.current_location: data['locations'][self.current_location]
+                }
+                self.game_data['items'] = {
+                    k: v for k, v in data['items'].items()
+                    if v['location'] == self.current_location
+                }
+                gc.collect()  # Clean up old location data
+
+            self.look()
+        else:
+            print("\nYou can't go that way.")
 
     def take(self, item_name: str) -> None:
         """Pick up an item."""
@@ -290,8 +324,15 @@ class ShmooplandGame:
             print("\nI don't understand that command. Type 'help' for a list of commands.")
 
     def cleanup(self):
-        """Clean up resources when game ends."""
-        self.ai.cleanup()
-        self.content_generator.cleanup()
-        for npc in self.npcs.values():
-            npc.cleanup()
+        """Clean up resources and free memory."""
+        if self.content_generator:
+            self.content_generator.cleanup()
+        if self.ai:
+            self.ai.cleanup()
+
+        # Clear caches and references
+        self.game_data = None
+        self.content_generator = None
+        self.ai = None
+        self.npcs = None
+        gc.collect()  # Force garbage collection
