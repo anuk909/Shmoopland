@@ -85,10 +85,12 @@ class ShmooplandGame:
         if items:
             print("\nYou also see:")
             for item in items:
-                item_desc = self.content_generator.generate_item_description(
-                    item,
-                    context
-                ) or self.game_data['items'][item]['description']
+                item_data = self.game_data['items'][item]
+                # Try template first, then static description, then default
+                item_desc = (
+                    self.content_generator.generate_item_description(item, context) or
+                    item_data.get('description', f"a mysterious {item}")
+                )
                 print(f"- {item}: {item_desc}")
 
     def inventory_command(self) -> None:

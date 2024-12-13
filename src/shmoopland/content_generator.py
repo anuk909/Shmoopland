@@ -27,20 +27,27 @@ class ContentGenerator:
         Returns:
             Generated description or None if no template exists
         """
-        cache_key = f"{location}:{hash(frozenset(context.items()))}"
+        # Create a cache key using only hashable components
+        cache_key = f"{location}:{hash(tuple(sorted((k, str(v)) for k, v in context.items())))}"
+
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        templates = self.templates.get("description_templates", {}).get(location, [])
-        if not templates:
+        templates = self.templates.get("description_templates", {})
+        location_templates = templates.get(location, [])
+
+        if not location_templates:
             return None
 
-        template = random.choice(templates)
-        description = template.format(**self._get_variables(context))
+        template = random.choice(location_templates)
+        variables = self._get_variables(context)
 
-        # Cache the result
-        self._cache[cache_key] = description
-        return description
+        try:
+            description = template.format(**variables)
+            self._cache[cache_key] = description
+            return description
+        except KeyError:
+            return None
 
     def generate_item_description(self, item: str, context: Dict) -> str:
         """Generate a dynamic description for an item.

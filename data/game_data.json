@@ -141,6 +141,7 @@
         },
         "magic_coin": {
             "location": "town_square",
+            "description": "A mysterious magical coin",
             "description_templates": [
                 "A {coin_type} coin that {coin_effect}",
                 "This magical currency {coin_feature}"
@@ -157,6 +158,7 @@
         },
         "crystal_prism": {
             "location": "market",
+            "description": "A beautiful crystal prism",
             "description_templates": [
                 "A {crystal_type} crystal that {crystal_effect}",
                 "This mystical prism {prism_feature}"
@@ -173,6 +175,7 @@
         },
         "enchanted_teacup": {
             "location": "apothecary",
+            "description": "A delicate enchanted teacup",
             "description_templates": [
                 "A delicate teacup that {teacup_effect}",
                 "This magical vessel {teacup_feature}"
