@@ -12,6 +12,8 @@ setup(
         "markovify>=0.9.0",
         "memory-profiler>=0.61.0",
         "pytest>=7.4.0",
+        "flask>=2.0.0",
+        "flask-cors>=4.0.0",
     ],
     python_requires=">=3.8",
 )
