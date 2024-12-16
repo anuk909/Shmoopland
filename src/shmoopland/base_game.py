@@ -139,15 +139,7 @@ class ShmooplandGame:
             for npc_type, templates in self.game_data.get('npcs', {}).items()
         }
 
-    @classmethod
-    def load_game_data(cls, json_file: str) -> Dict:
-        """Load game data from JSON file."""
-        try:
-            with open(json_file, 'r') as file:
-                return json.load(file)
-        except FileNotFoundError:
-            print(f'Game data file "{json_file}" not found.')
-            sys.exit(1)
+
 
     def look(self) -> None:
         """Look around the current location with AI-enhanced descriptions."""
