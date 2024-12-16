@@ -1,0 +1,68 @@
+{
+    "quests": {
+        "welcome_to_shmoopland": {
+            "title": "Welcome to Shmoopland",
+            "description": "Begin your magical journey in Shmoopland by exploring the town square.",
+            "objectives": [
+                {
+                    "type": "visit_location",
+                    "target": "town_square",
+                    "description": "Visit the town square"
+                }
+            ],
+            "rewards": {
+                "items": ["magic_coin"],
+                "experience": 10
+            },
+            "next_quest": "market_magic"
+        },
+        "market_magic": {
+            "title": "Market Magic",
+            "description": "Visit the magical marketplace and meet the merchant.",
+            "prerequisites": ["welcome_to_shmoopland"],
+            "objectives": [
+                {
+                    "type": "visit_location",
+                    "target": "market",
+                    "description": "Find the magical marketplace"
+                },
+                {
+                    "type": "talk_to_npc",
+                    "target": "merchant",
+                    "description": "Speak with the merchant"
+                }
+            ],
+            "rewards": {
+                "items": ["crystal_prism"],
+                "experience": 20
+            },
+            "next_quest": "wizard_apprentice"
+        },
+        "wizard_apprentice": {
+            "title": "The Wizard's Apprentice",
+            "description": "Seek out the wizard in their tower and learn about magic.",
+            "prerequisites": ["market_magic"],
+            "objectives": [
+                {
+                    "type": "visit_location",
+                    "target": "wizard_tower",
+                    "description": "Find the wizard's tower"
+                },
+                {
+                    "type": "talk_to_npc",
+                    "target": "wizard",
+                    "description": "Meet the wizard"
+                },
+                {
+                    "type": "collect_item",
+                    "target": "wizard_hat",
+                    "description": "Obtain the wizard's hat"
+                }
+            ],
+            "rewards": {
+                "items": ["enchanted_teacup"],
+                "experience": 30
+            }
+        }
+    }
+}
