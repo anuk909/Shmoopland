@@ -21,8 +21,13 @@ def main():
         try:
             command = input("\n> ")
             try:
+                if command.lower() in ['quit', 'exit']:
+                    game.cleanup()  # Ensure proper cleanup
+                    print("\nThanks for playing Shmoopland!")
+                    sys.exit(0)
                 game.parse_command(command)
             except SystemExit:
+                game.cleanup()  # Ensure proper cleanup
                 print("\nThanks for playing Shmoopland!")
                 sys.exit(0)
         except KeyboardInterrupt:

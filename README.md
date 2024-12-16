@@ -16,13 +16,28 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Install dependencies:
+3. Install the game and dependencies:
 ```bash
+# Install the game package and dependencies
 pip install -e .
-python -m spacy download en_core_web_sm  # Required for AI features
+
+# Install required spaCy model for AI features
+python -m spacy download en_core_web_sm
+
+# Verify installation
+python -c "import spacy; spacy.load('en_core_web_sm'); import shmoopland"
 ```
 
-Note: The game requires Python 3.8+ and approximately 50MB RAM for AI features.
+Note: If spaCy model installation fails, try:
+```bash
+pip install -U spacy
+python -m spacy download en_core_web_sm
+```
+
+The game requires:
+- Python 3.8 or higher
+- Approximately 100MB RAM for AI features
+- Internet connection for initial spaCy model download
 
 ## Running the Game
 
@@ -35,15 +50,27 @@ python src/shmoopland/game.py
 ### Web Interface
 To start the web server:
 ```bash
+# Install required packages (if not already installed via pip install -e .)
+pip install flask flask-cors
+
+# Start the server
 python src/shmoopland/web_server.py
 ```
-Then open http://localhost:5000 in your browser.
 
-The web interface provides:
+The web interface will be available at http://localhost:5000
+
+Features:
 - Text-based adventure interface with command history
 - Real-time game state updates
 - Clickable command suggestions
 - Mobile-friendly layout
+- Same gameplay experience as terminal mode
+
+Common Issues:
+- If port 5000 is in use, try: `lsof -i :5000` to find and kill the process
+- If Flask is not found, ensure you've run `pip install -e .`
+- If the page doesn't load, check that the server is running without errors
+- For connection issues, ensure you're using http://localhost:5000
 
 You can use all the same commands as in terminal mode. The interface will display the game output and maintain a history of your actions.
 

@@ -3,6 +3,7 @@
 import sys
 import gc
 import json
+import random
 from typing import Dict, List, Optional, Set
 from .utils import monitor_memory
 from .content_generator import ContentGenerator
@@ -12,7 +13,7 @@ from .quest_manager import QuestManager
 from .crafting import CraftingSystem
 from .skills import SkillSystem
 
-@monitor_memory(threshold_mb=50.0)
+@monitor_memory(threshold_mb=100.0)
 class ShmooplandGame:
 
     def __init__(self):
@@ -50,7 +51,19 @@ class ShmooplandGame:
             self.content_generator = ContentGenerator(self.game_data)
 
         if self.ai is None:
-            self.ai = GameAI()
+            try:
+                import spacy
+                try:
+                    self.nlp = spacy.load('en_core_web_sm')
+                    self.ai = GameAI(nlp_model=self.nlp)
+                except OSError:
+                    print("\nWarning: spaCy model not found. Using fallback mode.")
+                    self.nlp = None
+                    self.ai = GameAI(nlp_model=None)
+            except ImportError:
+                print("\nWarning: spaCy package not found. Using fallback mode.")
+                self.nlp = None
+                self.ai = GameAI(nlp_model=None)
 
         if self.npcs is None:
             self.npcs = self._initialize_npcs()
@@ -141,12 +154,11 @@ class ShmooplandGame:
 
 
 
-    def look(self) -> None:
+    def look(self) -> str:
         """Look around the current location with AI-enhanced descriptions."""
         locations = self.game_data['locations']
         if self.current_location not in locations:
-            print("\nYou are in a mysterious void. Something has gone wrong!")
-            return
+            return "You are in a mysterious void. Something has gone wrong!"
 
         location = locations[self.current_location]
 
@@ -162,7 +174,7 @@ class ShmooplandGame:
 
         # Enhance with AI-generated content
         enhanced_desc = self.ai.generate_description(description, context)
-        print(f"\n{enhanced_desc}")
+        result = [enhanced_desc]
 
         # List items in location
         items_here = [
@@ -170,7 +182,7 @@ class ShmooplandGame:
             if data['location'] == self.current_location
         ]
         if items_here:
-            print("\nYou see:", ", ".join(items_here))
+            result.append(f"\nYou see: {', '.join(items_here)}")
 
         # List NPCs in location
         npcs_here = [
@@ -178,40 +190,36 @@ class ShmooplandGame:
             if data.get('location') == self.current_location
         ]
         if npcs_here:
-            print("\nCharacters here:", ", ".join(npcs_here))
+            result.append(f"\nCharacters here: {', '.join(npcs_here)}")
 
         # Show available exits
         exits = location.get('exits', {})
         if exits:
-            print("\nExits:", ", ".join(exits.keys()))
+            result.append(f"\nExits: {', '.join(exits.keys())}")
 
-    def inventory_command(self) -> None:
+        return "\n".join(result)
+
+    def inventory_command(self) -> str:
         """Show player's inventory."""
         if not self.inventory:
-            print("\nYou are not carrying anything.")
-            return
-        print("\nYou are carrying:")
-        for item in self.inventory:
-            print(f"- {item}: {self.game_data['items'][item]['description']}")
+            return "Your inventory is empty."
+        return "You are carrying: " + ", ".join(self.inventory)
 
-    def help_command(self) -> None:
-        """Display available commands."""
-        print("\nAvailable commands:")
-        print("- look: Look around the current location")
-        print("- inventory: Check your inventory")
-        print("- go <direction>: Move in a direction (north, south, east, west, up, down)")
-        print("- take <item>: Pick up an item")
-        print("- drop <item>: Drop an item from your inventory")
-        print("- examine <item>: Look at an item more closely")
-        print("- talk <character>: Talk to an NPC")
-        print("- quests: View your active quests")
-        print("- quest <quest_id>: View details of a specific quest")
-        print("- skills: View your skills and levels")
-        print("- skill <skill_name>: View details of a specific skill")
-        print("- train <skill_name>: Practice a skill to gain experience")
-        print("- quit: Exit the game")
+    def help_command(self) -> str:
+        """Show available commands."""
+        commands = [
+            "look - Look around the current location",
+            "inventory - Check your inventory",
+            "go <direction> - Move in a direction (north, south, east, west, up, down)",
+            "take <item> - Pick up an item",
+            "drop <item> - Drop an item from your inventory",
+            "examine <item/npc> - Look at something more closely",
+            "talk <npc> - Talk to a character",
+            "quit/exit - Exit the game"
+        ]
+        return "\nAvailable commands:\n" + "\n".join(commands)
 
-    def move(self, direction: str) -> None:
+    def move(self, direction: str) -> str:
         """Move to a new location."""
         location = self.game_data['locations'].get(self.current_location, {})
         exits = location.get('exits', {})
@@ -232,220 +240,198 @@ class ShmooplandGame:
             # Update quest progress for visiting new location
             self._update_quest_progress("visit_location", new_location)
 
-            self.look()
+            return self.look()
         else:
-            print("\nYou can't go that way.")
+            return "You can't go that way."
 
-    def take(self, item_name: str) -> None:
+    def take(self, item_name: str) -> str:
         """Pick up an item."""
         if not item_name:
-            print("\nWhat do you want to take?")
-            return
+            return "What do you want to take?"
 
         items = self.game_data['items']
         if item_name not in items:
-            print(f"\nThere is no {item_name} here.")
-            return
+            return f"There is no {item_name} here."
 
         if items[item_name]['location'] != self.current_location:
-            print(f"\nThere is no {item_name} here.")
-            return
+            return f"There is no {item_name} here."
 
         self.inventory.append(item_name)
         items[item_name]['location'] = 'inventory'
         self.game_state['collected_items'].add(item_name)
-        print(f"\nYou take the {item_name}.")
+        return f"You take the {item_name}."
 
-    def drop(self, item_name: str) -> None:
+    def drop(self, item_name: str) -> str:
         """Drop an item."""
         if not item_name:
-            print("\nWhat do you want to drop?")
-            return
+            return "What do you want to drop?"
 
         if item_name not in self.inventory:
-            print(f"\nYou don't have a {item_name}.")
-            return
+            return f"You don't have a {item_name}."
 
         self.inventory.remove(item_name)
         self.game_data['items'][item_name]['location'] = self.current_location
-        print(f"\nYou drop the {item_name}.")
+        return f"You drop the {item_name}."
 
-    def examine(self, item_name: str) -> None:
-        """Examine an item with AI-enhanced description."""
+    def examine(self, item_name: str) -> str:
+        """Examine an item or NPC with AI-enhanced description."""
         if not item_name:
-            print("\nWhat do you want to examine?")
-            return
+            return "What do you want to examine?"
 
+        # Check inventory items
+        if item_name in self.inventory:
+            item = self.game_data['items'][item_name]
+            enhanced_desc = self.ai.generate_description(
+                item['description'],
+                {"context": "detailed_examination"}
+            )
+            return f"\n{enhanced_desc}"
+
+        # Check location items
         items = self.game_data['items']
-        if item_name not in items:
-            print(f"\nYou don't see any {item_name} to examine.")
-            return
+        if (item_name in items and
+            items[item_name]['location'] == self.current_location):
+            item = items[item_name]
+            enhanced_desc = self.ai.generate_description(
+                item['description'],
+                {"context": "detailed_examination"}
+            )
+            return f"\n{enhanced_desc}"
 
-        if (items[item_name]['location'] != self.current_location and
-            items[item_name]['location'] != 'inventory'):
-            print(f"\nYou don't see any {item_name} to examine.")
-            return
+        # Check NPCs
+        npcs = self.game_data.get('npcs', {})
+        if (item_name in npcs and
+            npcs[item_name].get('location') == self.current_location):
+            npc = npcs[item_name]
+            enhanced_desc = self.ai.generate_description(
+                npc['description'],
+                {"context": "character_examination"}
+            )
+            return f"\n{enhanced_desc}"
 
+        return f"You don't see any {item_name} here."
+
+    def talk(self, npc_name: str) -> str:
+        """Talk to an NPC with context-aware responses."""
+        if not npc_name:
+            return "Who do you want to talk to?"
+
+        npcs = self.game_data.get('npcs', {})
+        if npc_name not in npcs:
+            return f"There is no {npc_name} here."
+
+        npc = npcs[npc_name]
+        if npc.get('location') != self.current_location:
+            return f"There is no {npc_name} here."
+
+        # Generate context-aware dialogue
         context = {
+            "npc_mood": npc.get('mood', 'neutral'),
             "time_of_day": self.game_state["time_of_day"],
-            "activity_level": self.game_state["activity_level"],
-            "skill_level": self.skills.get_skill_level("lore"),
-            **self.game_data.get("item_variables", {})
+            "player_inventory": self.inventory,
+            "location": self.current_location
         }
 
-        base_desc = items[item_name].get('examine_text', items[item_name]['description'])
-        description = self.ai.generate_description(base_desc, context)
-        print(f"\n{description}")
+        response = self.ai.generate_dialogue(npc, context)
+        return f"\n{npc_name} says: {response}"
 
-    def talk(self, npc_type: str) -> None:
-        """Talk to an NPC with AI-enhanced interactions."""
-        if not npc_type:
-            print("\nWho do you want to talk to?")
-            return
+    def show_skills(self) -> str:
+        """Show player's skills and levels."""
+        if not self.game_state.get('skills'):
+            return "You haven't learned any skills yet."
 
-        npc_type = npc_type.lower()
-        if npc_type not in self.npcs:
-            print(f"\nThere's no {npc_type} here to talk to.")
-            return
+        skills = []
+        for skill, data in self.game_state['skills'].items():
+            skills.append(f"{skill}: Level {data['level']} ({data['exp']}/{data['next_level']} XP)")
+        return "\nYour Skills:\n" + "\n".join(skills)
 
-        npc = self.npcs[npc_type]
-        if npc_type not in [n for n, data in self.game_data.get('npcs', {}).items()
-                           if data.get('location') == self.current_location]:
-            print(f"\nThere's no {npc_type} here to talk to.")
-            return
+    def show_skill_details(self, skill_name: str) -> str:
+        """Show details of a specific skill."""
+        if not skill_name:
+            return "Which skill do you want to know about?"
 
-        # Get AI-enhanced greeting based on NPC mood and context
-        context = {
-            "time_of_day": self.game_state["time_of_day"],
-            "activity_level": self.game_state["activity_level"],
-            "previous_interactions": self.game_state["npc_interactions"].get(npc_type, 0)
-        }
+        skills = self.game_state.get('skills', {})
+        if skill_name not in skills:
+            return f"You haven't learned {skill_name} yet."
 
-        greeting = self.ai.generate_description(npc.get_greeting(), context)
-        print(f"\n{npc_type.title()}: {greeting}")
+        skill = skills[skill_name]
+        return f"\n{skill_name} - Level {skill['level']}\nExperience: {skill['exp']}/{skill['next_level']}\n{skill.get('description', '')}"
 
-        while True:
-            try:
-                response = input("\nWhat do you say? (or 'bye' to end conversation) ")
-                if response.lower() in ['bye', 'goodbye', 'farewell']:
-                    farewell = self.ai.generate_description(
-                        "{npc} bids you farewell.",
-                        {"npc": npc_type.title()}
-                    )
-                    print(f"\n{farewell}")
-                    break
-
-                # Use AI to analyze player's response and generate appropriate NPC reaction
-                analysis = self.ai.analyze_command(response)
-                npc_response = npc.respond_to(response, self.ai)
-                print(f"\n{npc_type.title()}: {npc_response}")
-
-                # Track interaction for future context
-                self.game_state["npc_interactions"][npc_type] = \
-                    self.game_state["npc_interactions"].get(npc_type, 0) + 1
-
-            except KeyboardInterrupt:
-                print("\nConversation ended abruptly.")
-                break
-
-    def show_skills(self) -> None:
-        """Display all skills and their levels."""
-        skills = self.skills.get_all_skills()
-        print("\nYour Skills:")
-        for name, info in skills.items():
-            print(f"\n- {name.title()} (Level {info['level']})")
-            print(f"  {info['description']}")
-            print(f"  Experience: {info['experience']}/{info['next_level']}")
-
-    def show_skill_details(self, skill_name: str) -> None:
-        """Display detailed information about a specific skill."""
-        desc = self.skills.get_skill_description(skill_name)
-        if not desc:
-            print(f"\nNo skill found with name: {skill_name}")
-            return
-
-        level = self.skills.get_skill_level(skill_name)
-        print(f"\n{skill_name.title()} - Level {level}")
-        print(f"Description: {desc}")
-
-    def train_skill(self, skill_name: str) -> None:
+    def train_skill(self, skill_name: str) -> str:
         """Train a skill to gain experience."""
-        success, message = self.skills.add_experience(skill_name, 10)
-        print(f"\n{message}")
+        return self.perform_skill_check(skill_name, "training")
 
-    def perform_skill_check(self, skill_name: str, difficulty: int) -> bool:
-        """Perform a skill check and return success."""
-        success, message = self.skills.check_skill(skill_name, difficulty)
-        print(f"\n{message}")
-        return success
+    def perform_skill_check(self, skill_name: str, context: str) -> str:
+        """Perform a skill check with the given context."""
+        if skill_name not in self.game_state.get('skills', {}):
+            return f"You don't have the {skill_name} skill."
 
-    def parse_command(self, command: str) -> None:
-        """Parse and execute player commands with AI-enhanced understanding."""
-        if not command:
-            return
-
-        # Analyze command using AI
-        analysis = self.ai.analyze_command(command)
-        words = command.lower().split()
-        action = words[0]
-        args = words[1:] if len(words) > 1 else []
-
-        # Use AI analysis for enhanced command understanding
-        if analysis["intent"] == "movement" and args:
-            self.move(args[0])
-            return
-        elif analysis["intent"] == "interaction":
-            if action == "examine" and args:
-                self.examine(" ".join(args))
-                return
-            elif action == "talk" and args:
-                self.talk(" ".join(args))
-                return
-
-        # Handle standard commands
-        if action == "quit":
-            confirm = input("\nAre you sure you want to quit? (y/n) ")
-            if confirm.lower() == 'y':
-                self.cleanup()
-                print("\nThanks for playing Shmoopland!")
-                sys.exit(0)
-        elif action == "look":
-            self.look()
-        elif action == "inventory":
-            self.inventory_command()
-        elif action == "help":
-            self.help_command()
-        elif action == "take" and args:
-            self.take(" ".join(args))
-        elif action == "drop" and args:
-            self.drop(" ".join(args))
-        elif action == "quests":
-            self.show_quests()
-        elif action == "quest" and args:
-            self.show_quest_details(" ".join(args))
-        elif action == "skills":
-            self.show_skills()
-        elif action == "skill" and args:
-            self.show_skill_details(" ".join(args))
-        elif action == "train" and args:
-            self.train_skill(" ".join(args))
-        else:
-            print("\nI don't understand that command. Type 'help' for a list of commands.")
+        skill = self.game_state['skills'][skill_name]
+        success = random.random() < (skill['level'] * 0.1 + 0.5)
+        message = self.ai.generate_skill_result(skill_name, context, success)
+        if success:
+            skill['exp'] += random.randint(10, 20)
+            if skill['exp'] >= skill['next_level']:
+                skill['level'] += 1
+                skill['next_level'] *= 2
+                return f"{message}\nCongratulations! Your {skill_name} skill has increased to level {skill['level']}!"
+        return message
 
     def cleanup(self):
-        """Clean up resources and free memory."""
-        if self.content_generator:
-            self.content_generator.cleanup()
+        """Clean up resources."""
         if self.ai:
             self.ai.cleanup()
+        if self.content_generator:
+            self.content_generator.cleanup()
+        if self.quest_manager:
+            self.quest_manager.cleanup()
+        if self.crafting_system:
+            self.crafting_system.cleanup()
+        if self.skills:
+            self.skills.cleanup()
+        gc.collect()
 
-        # Clear caches and references
-        self.game_data.clear()
-        self._loaded_data_types.clear()
-        self.content_generator = None
-        self.ai = None
-        self.npcs = None
-        self.quest_manager = None
-        self.crafting_system = None
-        self.skills = None
-        gc.collect()  # Force garbage collection
+    def parse_command(self, command: str) -> str:
+        """Parse and execute game command."""
+        command = command.lower().strip()
+
+        # Basic commands that don't need AI processing
+        if command in ['quit', 'exit']:
+            self.cleanup()
+            return "Thanks for playing Shmoopland!"
+        elif command == 'look':
+            return self.look()
+        elif command == 'inventory':
+            return self.inventory_command()
+        elif command == 'help':
+            return self.help_command()
+
+        # Movement commands
+        if command.startswith('go '):
+            direction = command[3:].strip()
+            return self.move(direction)
+
+        # Item interaction commands
+        if command.startswith('take '):
+            item = command[5:].strip()
+            return self.take(item)
+        elif command.startswith('drop '):
+            item = command[5:].strip()
+            return self.drop(item)
+        elif command.startswith('examine '):
+            target = command[8:].strip()
+            return self.examine(target)
+
+        # NPC interaction
+        if command.startswith('talk '):
+            npc = command[5:].strip()
+            return self.talk(npc)
+
+        # Skill commands
+        if command == 'skills':
+            return self.show_skills()
+        elif command.startswith('train '):
+            skill = command[6:].strip()
+            return self.train_skill(skill)
+
+        return "I don't understand that command. Type 'help' for a list of commands."

@@ -10,18 +10,26 @@ from .utils import monitor_memory, cleanup_resources
 class GameAI:
     """Memory-efficient AI system for game interactions."""
 
-    def __init__(self):
-        """Initialize with lazy loading of models."""
+    def __init__(self, nlp_model: Optional[str] = 'en_core_web_sm'):
+        """Initialize with lazy loading of models.
+
+        Args:
+            nlp_model: Name of spaCy model to use, defaults to 'en_core_web_sm'
+        """
         self._nlp = None
-        self._response_cache: Dict[str, str] = {}
-        self._context: Dict[str, Any] = {}
+        self._nlp_model = nlp_model
+        self._response_cache = {}
+        self._context = {}
 
     @property
     @monitor_memory(threshold_mb=20.0)
     def nlp(self):
         """Lazy load spaCy model."""
-        if self._nlp is None:
-            self._nlp = spacy.load('en_core_web_sm')
+        if self._nlp is None and self._nlp_model:
+            try:
+                self._nlp = spacy.load(self._nlp_model)
+            except OSError:
+                self._nlp = None
         return self._nlp
 
     def cleanup(self):
@@ -38,6 +46,20 @@ class GameAI:
         if cache_key in self._response_cache:
             return self._response_cache[cache_key]
 
+        # Fallback implementation when NLP is not available
+        if self.nlp is None:
+            words = command.lower().split()
+            analysis = {
+                'intent': 'unknown',
+                'objects': words[1:] if len(words) > 1 else [],
+                'action': words[0] if words else None,
+                'sentiment': 0.0,
+                'entities': [],
+                'topic': 'general'
+            }
+            self._response_cache[cache_key] = analysis
+            return analysis
+
         doc = self.nlp(command.lower())
         blob = TextBlob(command)  # For sentiment analysis
 
@@ -45,9 +67,9 @@ class GameAI:
             'intent': self._extract_intent(doc),
             'objects': [token.text for token in doc if token.dep_ in ('dobj', 'pobj')],
             'action': next((token.text for token in doc if token.pos_ == 'VERB'), None),
-            'sentiment': blob.sentiment.polarity,  # Add sentiment analysis
-            'entities': [ent.text for ent in doc.ents],  # Add named entities
-            'topic': self._extract_topic(doc)  # Add topic extraction
+            'sentiment': blob.sentiment.polarity,
+            'entities': [ent.text for ent in doc.ents],
+            'topic': self._extract_topic(doc)
         }
 
         self._response_cache[cache_key] = analysis
@@ -59,6 +81,14 @@ class GameAI:
         cache_key = f"desc_{base_text}_{hash(frozenset(context.items()))}"
         if cache_key in self._response_cache:
             return self._response_cache[cache_key]
+
+        # Fallback implementation when NLP is not available
+        if self.nlp is None:
+            enhanced = base_text
+            if context.get('time_of_day') == 'night':
+                enhanced = enhanced.replace('bright', 'dim').replace('sunny', 'moonlit')
+            self._response_cache[cache_key] = enhanced
+            return enhanced
 
         # Use TextBlob for simple sentiment analysis
         blob = TextBlob(base_text)
