@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 from shmoopland.base_game import ShmooplandGame
 
 def main():
@@ -19,7 +20,16 @@ def main():
     while True:
         try:
             command = input("\n> ")
-            game.parse_command(command)
+            try:
+                if command.lower() in ['quit', 'exit']:
+                    game.cleanup()  # Ensure proper cleanup
+                    print("\nThanks for playing Shmoopland!")
+                    sys.exit(0)
+                game.parse_command(command)
+            except SystemExit:
+                game.cleanup()  # Ensure proper cleanup
+                print("\nThanks for playing Shmoopland!")
+                sys.exit(0)
         except KeyboardInterrupt:
             print("\nUse 'quit' to exit the game properly.")
         except Exception as e:
